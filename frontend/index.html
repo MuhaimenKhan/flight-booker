@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flight Booker</title>
+  <style>
+    
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 0 20px;
+  background: #f0f4f8;
+  color: #222;
+}
+h1 {
+  text-align: center;
+  color: #004a99;
+  margin-bottom: 30px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+form {
+  background: white;
+  padding: 25px 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+label {
+  display: block;
+  margin: 18px 0 6px;
+  font-weight: 600;
+  color: #444;
+  font-size: 0.95rem;
+}
+input[type="text"],
+input[type="date"],
+select {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 1rem;
+  border: 1.8px solid #ccc;
+  border-radius: 6px;
+  transition: border-color 0.3s ease;
+}
+input[type="text"]:focus,
+input[type="date"]:focus,
+select:focus {
+  border-color: #0077cc;
+  outline: none;
+}
+.toggle-group {
+  display: flex;
+  gap: 24px;
+  margin-top: 8px;
+}
+.toggle-group label {
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  user-select: none;
+}
+.toggle-group input[type="radio"] {
+  margin-right: 6px;
+  cursor: pointer;
+}
+button {
+  margin-top: 28px;
+  width: 100%;
+  padding: 14px 0;
+  background-color: #0077cc;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 5px 12px rgba(0,119,204,0.4);
+  transition: background-color 0.3s ease;
+}
+button:hover {
+  background-color: #005fa3;
+  box-shadow: 0 6px 15px rgba(0,95,163,0.6);
+}
+#results {
+  margin-top: 40px;
+}
+.flight-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  transition: transform 0.15s ease;
+}
+.flight-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+}
+.flight-airline {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #0077cc;
+  margin-bottom: 6px;
+}
+.flight-info {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.4;
+}
+.loading {
+  text-align: center;
+  color: #0077cc;
+  font-weight: 600;
+  margin-top: 30px;
+  font-size: 1.1rem;
+}
+.error-message {
+  background-color: #ffdddd;
+  border: 1px solid #ff7b7b;
+  color: #a30000;
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-top: 30px;
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  body {
+    margin: 20px 12px;
+    max-width: 100%;
+  }
+  form {
+    padding: 20px;
+  }
+  button {
+    font-size: 1rem;
+  }
+}
+  </style>
+</head>
+<body>
+  <h1>Flight Booker</h1>
+  <form id="searchForm">
+    <label for="origin">Origin Airport</label>
+    <input type="text" id="origin" name="origin" placeholder="e.g. JFK" required />
+
+    <label for="destination">Destination Airport</label>
+    <input type="text" id="destination" name="destination" placeholder="e.g. LAX" required />
+
+    <label>Trip Type</label>
+    <div class="toggle-group">
+      <label><input type="radio" name="tripType" value="oneway" checked /> One-way</label>
+      <label><input type="radio" name="tripType" value="return" /> Return</label>
+    </div>
+
+    <label for="departureDate">Departure Date</label>
+    <input type="date" id="departureDate" name="departureDate" required />
+
+    <label for="returnDate" id="returnDateLabel" style="display:none;">Return Date</label>
+    <input type="date" id="returnDate" name="returnDate" style="display:none;" />
+
+    <label for="passengers">Passengers</label>
+    <select id="passengers" name="passengers">
+      <option value="1">1 Passenger</option>
+      <option value="2">2 Passengers</option>
+      <option value="3">3 Passengers</option>
+      <option value="4">4 Passengers</option>
+      <option value="5">5 Passengers</option>
+    </select>
+
+    <label for="flightClass">Flight Class</label>
+    <select id="flightClass" name="flightClass">
+      <option value="economy">Economy</option>
+      <option value="premiumEconomy">Premium Economy</option>
+      <option value="business">Business</option>
+      <option value="first">First Class</option>
+    </select>
+
+    <button type="submit">Search Flights</button>
+  </form>
+  <div id="results"></div>
+
+<script>
+  // Show/hide return date based on trip type
+  const tripTypeRadios = document.querySelectorAll('input[name="tripType"]');
+  const returnDateInput = document.getElementById('returnDate');
+  const returnDateLabel = document.getElementById('returnDateLabel');
+
+  tripTypeRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      if (radio.value === 'return' && radio.checked) {
+        returnDateInput.style.display = 'block';
+        returnDateLabel.style.display = 'block';
+        returnDateInput.required = true;
+      } else {
+        returnDateInput.style.display = 'none';
+        returnDateLabel.style.display = 'none';
+        returnDateInput.required = false;
+        returnDateInput.value = '';
+      }
+    });
+  });
+
+  // Handle form submit and fetch flights from backend API
+  document.getElementById('searchForm').addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    // Build query parameters for backend API
+    const params = new URLSearchParams();
+    params.append('origin', data.origin.toUpperCase());
+    params.append('destination', data.destination.toUpperCase());
+    // You can add more filters if backend supports them later
+
+    // Call your backend API
+    try {
+      const response = await fetch(`http://localhost:5000/api/flights?${params.toString()}`);
+      if (!response.ok) throw new Error('Network response was not ok');
+
+      const flights = await response.json();
+
+      // Show results
+      const resultsDiv = document.getElementById('results');
+      if (flights.length === 0) {
+        resultsDiv.innerHTML = '<p>No flights found.</p>';
+        return;
+      }
+
+      const listItems = flights.map(flight => `
+        <div style="border:1px solid #ddd; padding:10px; margin-bottom:10px; border-radius:5px;">
+          <strong>${flight.airline}</strong><br/>
+          From: ${flight.from} → To: ${flight.to}<br/>
+          Fare: $${flight.fare} | Duration: ${flight.duration}
+        </div>
+      `).join('');
+
+      resultsDiv.innerHTML = `<h2>Search Results:</h2>${listItems}`;
+
+    } catch (error) {
+      alert('Error fetching flights: ' + error.message);
+    }
+  });
+</script>
+
+  
+
+</body>
+</html>

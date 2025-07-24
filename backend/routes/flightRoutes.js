@@ -5,3 +5,4 @@ const { getFlights } = require('../controllers/flightController');
 router.get('/', getFlights);
 
 module.exports = router;
+getFlights 

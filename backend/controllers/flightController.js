@@ -18,6 +18,21 @@ const flights = [
   },
 ];
 
-exports.getFlights = (req, res) => {
-  res.json(flights);
+const getFlights = (req, res) => {
+  const { origin, destination } = req.query;
+
+  let results = flights;
+
+  if (origin) {
+    results = results.filter(flight => flight.from.toUpperCase() === origin.toUpperCase());
+  }
+  if (destination) {
+    results = results.filter(flight => flight.to.toUpperCase() === destination.toUpperCase());
+  }
+
+  res.json(results);
+};
+
+module.exports = {
+  getFlights,
 };
