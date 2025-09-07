@@ -181,9 +181,53 @@ button:hover {
 
     <button type="submit">Search Flights</button>
   </form>
+  <div id="results-controls" style="display:none; margin-top: 20px;">
+  <label for="sortResults">Sort Results:</label>
+  <select id="sortResults">
+    <option value="fare-asc">Price: Low → High</option>
+    <option value="fare-desc">Price: High → Low</option>
+    <option value="duration-asc">Duration: Low → High</option>
+    <option value="duration-desc">Duration: High → Low</option>
+  </select>
   <div id="results"></div>
+</div>
+
 
 <script>
+
+  let fetchedFlights = [];
+
+  function durationToMinutes(durationStr) {
+    const match = durationStr.match(/(\d+)h\s*(\d+)?m?/);
+    if (!match) return 0;
+    const hours = parseInt(match[1] || '0', 10);
+    const mins = parseInt(match[2] || '0', 10);
+    return hours * 60 + mins;
+  }
+
+  function sortFlights(flights, criteria, order = 'asc') {
+    return flights.sort((a, b) => {
+      let valA, valB;
+
+      if (criteria === 'fare') {
+        valA = a.fare;
+        valB = b.fare;
+      } else if (criteria === 'duration') {
+        valA = durationToMinutes(a.duration);
+        valB = durationToMinutes(b.duration);
+      } else {
+        return 0; // unknown criteria
+      }
+
+      return order === 'asc' ? valA - valB : valB - valA;
+    });
+  }
+
+  document.getElementById('sortResults').addEventListener('change', (e) => {
+  const [criteria, order] = e.target.value.split('-');
+  const sorted = sortFlights([...fetchedFlights], criteria, order);
+  renderFlights(sorted);
+});
   // Show/hide return date based on trip type
   const tripTypeRadios = document.querySelectorAll('input[name="tripType"]');
   const returnDateInput = document.getElementById('returnDate');
@@ -204,6 +248,24 @@ button:hover {
     });
   });
 
+  function renderFlights(flights) {
+    const resultsDiv = document.getElementById('results');
+    const listItems = flights.map(flight => `
+      <div class="flight-card">
+        <div class="flight-airline">${flight.airline}</div>
+        <div class="flight-info">
+          From: ${flight.from} → To: ${flight.to}<br/>
+          Fare: $${flight.fare} | Duration: ${flight.duration}
+        </div>
+      </div>
+    `).join('');
+
+    resultsDiv.innerHTML = `<h2>Search Results:</h2>${listItems}`;
+
+    // Show sorting dropdown
+    document.getElementById('results-controls').style.display = 'block';
+  }
+
   // Handle form submit and fetch flights from backend API
   document.getElementById('searchForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -222,24 +284,17 @@ button:hover {
       const response = await fetch(`http://localhost:5000/api/flights?${params.toString()}`);
       if (!response.ok) throw new Error('Network response was not ok');
 
-      const flights = await response.json();
+      //const flights = await response.json();
+      fetchedFlights = await response.json();
 
       // Show results
       const resultsDiv = document.getElementById('results');
-      if (flights.length === 0) {
+      if (fetchedFlights.length === 0) {
         resultsDiv.innerHTML = '<p>No flights found.</p>';
         return;
       }
 
-      const listItems = flights.map(flight => `
-        <div style="border:1px solid #ddd; padding:10px; margin-bottom:10px; border-radius:5px;">
-          <strong>${flight.airline}</strong><br/>
-          From: ${flight.from} → To: ${flight.to}<br/>
-          Fare: $${flight.fare} | Duration: ${flight.duration}
-        </div>
-      `).join('');
-
-      resultsDiv.innerHTML = `<h2>Search Results:</h2>${listItems}`;
+      renderFlights(fetchedFlights);
 
     } catch (error) {
       alert('Error fetching flights: ' + error.message);
