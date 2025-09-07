@@ -189,6 +189,7 @@ button:hover {
     <option value="duration-asc">Duration: Low → High</option>
     <option value="duration-desc">Duration: High → Low</option>
   </select>
+  <div id="excludeAirlines" style="margin-top: 20px;"></div>
   <div id="results"></div>
 </div>
 
@@ -255,7 +256,8 @@ button:hover {
         <div class="flight-airline">${flight.airline}</div>
         <div class="flight-info">
           From: ${flight.from} → To: ${flight.to}<br/>
-          Fare: $${flight.fare} | Duration: ${flight.duration}
+          Fare: $${flight.fare} <br/>
+          Duration: ${flight.duration}
         </div>
       </div>
     `).join('');
@@ -264,6 +266,36 @@ button:hover {
 
     // Show sorting dropdown
     document.getElementById('results-controls').style.display = 'block';
+  }
+
+  function filterFlights(flights) {
+    const checkboxes = document.querySelectorAll('#excludeAirlines input[type="checkbox"]:checked');
+    const excluded = Array.from(checkboxes).map(cb => cb.value);
+    return flights.filter(flight => !excluded.includes(flight.airline));
+}
+  function renderExcludeAirlines(flights) {
+    const container = document.getElementById('excludeAirlines');
+    container.innerHTML = '<label>Exclude Airlines:</label>';
+
+    const airlines = [...new Set(flights.map(f => f.airline))];
+
+    airlines.forEach(airline => {
+      const label = document.createElement('label');
+      label.innerHTML = `<input type="checkbox" value="${airline}" /> ${airline}`;
+      container.appendChild(label);
+    });
+
+    container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const sortSelect = document.getElementById('sortResults');
+        const [criteria, order] = sortSelect.value.split('-');
+
+        const sortedFlights = sortFlights([...fetchedFlights], criteria, order);
+        const filteredFlights = filterFlights(sortedFlights);
+
+        renderFlights(filteredFlights);
+      });
+    });
   }
 
   // Handle form submit and fetch flights from backend API
@@ -293,7 +325,7 @@ button:hover {
         resultsDiv.innerHTML = '<p>No flights found.</p>';
         return;
       }
-
+      renderExcludeAirlines(fetchedFlights);
       renderFlights(fetchedFlights);
 
     } catch (error) {
